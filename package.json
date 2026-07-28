@@ -1,0 +1,17 @@
+{
+  "name": "feedback-intake-service",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "api",
+    "app"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,app -c blue,magenta \"npm run dev -w api\" \"npm run dev -w app\"",
+    "test": "npm test -w api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
