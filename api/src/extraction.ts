@@ -1,5 +1,4 @@
-// What the model returns is validated against the contract before it is trusted,
-// so the client's return type stays unknown until the contract exists.
+// Untrusted until the route validates it against the contract.
 type ExtractionResult = unknown;
 
 export interface ExtractionClient {
