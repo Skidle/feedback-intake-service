@@ -2,7 +2,7 @@ import express, { type Express } from 'express';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { ExtractedFieldsSchema, type FeedbackRecord } from './contract.js';
-import type { ExtractionClient } from './extraction.js';
+import type { ExtractionClient } from './extraction/index.js';
 import { createStore } from './store.js';
 
 const SubmissionSchema = z.object({

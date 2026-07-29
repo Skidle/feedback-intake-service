@@ -123,7 +123,7 @@ Both scenario tests are written and committed failing before the implementation.
 | API | Node.js + Express |
 | Contract / validation | Zod |
 | UI | React + shadcn/ui (Tailwind) |
-| AI | Anthropic `claude-opus-5`, structured output via tool use (`strict: true`) |
+| AI | Anthropic `claude-haiku-4-5`, structured output via tool use (`strict: true`) |
 | Store | In-memory `Map` |
 | Tests | Vitest |
 | IaC | AWS CDK: the API on Lambda behind a Function URL, the built frontend on S3 as a static site |
