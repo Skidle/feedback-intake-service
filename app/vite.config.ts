@@ -11,4 +11,10 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    // The API sets no CORS headers, so the dev server forwards to it same-origin.
+    proxy: {
+      '/feedback': 'http://localhost:3000',
+    },
+  },
 })
