@@ -10,15 +10,14 @@ export function createStore(): Store {
   const records = new Map<string, FeedbackRecord>();
 
   return {
-    save(_record) {
-      void records;
-      throw new Error('not implemented');
+    save(record) {
+      records.set(record.id, record);
     },
     list() {
-      throw new Error('not implemented');
+      return [...records.values()];
     },
-    get(_id) {
-      throw new Error('not implemented');
+    get(id) {
+      return records.get(id);
     },
   };
 }
