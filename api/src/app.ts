@@ -6,7 +6,7 @@ import type { ExtractionClient } from './extraction/index.js';
 import { createStore } from './store.js';
 
 const SubmissionSchema = z.object({
-  text: z.string().min(1).max(5000),
+  text: z.string().trim().min(1).max(5000),
 });
 
 export function createApp(deps: { extraction: ExtractionClient }): Express {

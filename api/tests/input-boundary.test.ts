@@ -31,6 +31,20 @@ describe('Input boundary', () => {
         expect(called).toBe(false);
     });
 
+    it('rejects a whitespace-only submission without calling the model', async () => {
+        let called = false;
+        const app = createApp({
+            extraction: { extract: async () => { called = true; return {} } },
+        })
+
+        const res = await request(app)
+            .post('/feedback')
+            .send({ text: '     ' });
+
+        expect(res.status).toBe(400);
+        expect(called).toBe(false);
+    });
+
     it('rejects a submission with no text field without calling the model', async () => {
         let called = false;
         const app = createApp({
