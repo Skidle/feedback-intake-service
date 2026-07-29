@@ -45,6 +45,23 @@ describe('Input boundary', () => {
         expect(called).toBe(false);
     });
 
+    it('rejects a malformed JSON body as a client error, not a server error', async () => {
+        let called = false;
+        const app = createApp({
+            extraction: { extract: async () => { called = true; return {} } },
+        })
+
+        const res = await request(app)
+            .post('/feedback')
+            .set('content-type', 'application/json')
+            .send('{"text": ');
+
+        expect(res.status).toBe(400);
+        expect(res.headers['content-type']).toMatch(/application\/json/);
+        expect(res.text).not.toMatch(/\bat \w+/);
+        expect(called).toBe(false);
+    });
+
     it('rejects a submission with no text field without calling the model', async () => {
         let called = false;
         const app = createApp({
