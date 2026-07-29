@@ -16,6 +16,9 @@
 | Contract, extraction client | Me | The parts where the design decisions live |
 | Acceptance criteria tests | Me | Committed failing before the implementation |
 | Store, route handlers | Claude | Plumbing, reviewed before committing |
+| app/src/components/ui/* | shadcn registry | Vendored component source, copied in by the UI library CLI. Not written by me or Claude |
+| Dashboard | Claude | Reviewed and iterated on before committing |
+| CDK stack, Lambda handler | Claude | Reviewed and trimmed before committing |
 
 ## Known limitations
 
