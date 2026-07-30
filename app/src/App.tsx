@@ -47,7 +47,9 @@ const FORM_ID = 'feedback-form'
 
 // Table cells default to whitespace-nowrap, so the prose columns need both a
 // wrap and a width cap or they expand until the table scrolls sideways.
-const WRAP = 'max-w-[22ch] whitespace-normal'
+// wrap-anywhere rather than break-words: a submission with no spaces in it has
+// a min-content width of the whole string, which break-words does not reduce.
+const WRAP = 'max-w-[22ch] whitespace-normal wrap-anywhere'
 
 function countByCategory(records: FeedbackRecord[]) {
   return CATEGORIES.map((category) => ({

@@ -22,6 +22,9 @@
 
 ## Known limitations
 
+- A very long submission makes its table row extremely tall. Accepted:
+  truncating would hide the text the column exists to show, which is checking
+  the summary against what was actually said.
 - *(TODO: add what the build turns up.)*
 
 ## With more time
