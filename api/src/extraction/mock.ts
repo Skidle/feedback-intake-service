@@ -24,6 +24,9 @@ const mockResponses = [
 
 export function createMockClient(): ExtractionClient {
     return {
+        // The retry hint is ignored: the response is a pure function of the
+        // submission's length, so a retry returns the same answer. Offline mode
+        // cannot demonstrate a repair, only that the retry happens.
         async extract(text) {
             return mockResponses[text.length % mockResponses.length];
         },

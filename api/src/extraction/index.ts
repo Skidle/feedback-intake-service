@@ -2,5 +2,6 @@
 type ExtractionResult = unknown;
 
 export interface ExtractionClient {
-    extract(text: string): Promise<ExtractionResult>;
+    /** `previousFailure` is advisory — a client may ignore it. */
+    extract(text: string, previousFailure?: string): Promise<ExtractionResult>;
 }

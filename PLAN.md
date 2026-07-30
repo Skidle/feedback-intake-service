@@ -68,10 +68,11 @@ Whatever the reason, the outcome is the same. Bad values, a refusal, a cut-off r
 
 The policy, and the reasoning:
 
-- **Reject on first failure.** 422, nothing stored, no retry.
+- **One repair attempt, then reject.** Output that fails the contract is sent back to the model with the validation errors, and asked for again. If the second answer also fails: 422, nothing stored. Exactly one retry, never more.
+- **A call that throws is not retried.** A repair prompt cannot fix a provider that is down, and retrying transport failures is out of scope (see the out-of-scope table). It answers 422 the same way.
 - **Reject rather than quarantine.** Keeps the contract simple: every record in the store is complete, so no consumer handles partial records.
 - **The form keeps the submitted text.** The user does not retype it.
-- **Known cost.** A failed extraction loses the submission. The fix is one retry with the validation errors fed back, planned for the hardening phase.
+- **Known cost.** Two failures still lose the submission, and a retry doubles the wait on the slowest path. Accepted: the failure is rarer than the fixable slip the retry catches.
 
 ## Acceptance criteria
 
@@ -87,10 +88,12 @@ Scenario: A valid submission produces a conforming record
 ```
 
 ```gherkin
-Scenario: Model output that fails the contract is rejected
+Scenario: Model output that fails the contract is retried once, then rejected
   Given the extraction model returns a summary longer than the contract permits
   When I submit the feedback text "The export button does nothing on Safari"
-  Then no record is stored
+  Then the model is asked again, once, with the validation error
+  And the second answer also fails the contract
+  And no record is stored
   And the response is 422 identifying the contract as the reason
 ```
 
@@ -101,8 +104,10 @@ No test calls the real API. The extraction client is replaced with a fake, so th
 | Test | Covers |
 |---|---|
 | Named to scenario 1 | Success path, end to end |
-| Named to scenario 2 | Invalid model output |
-| Input boundary | Empty and oversized submissions, rejected before the model is called |
+| Named to scenario 2 | Invalid model output: retried once, then rejected |
+| Input boundary | Empty, whitespace-only, oversized and malformed submissions, rejected before the model is called |
+| Extraction retry | The repair attempt succeeding, and no retry when the first answer is already valid |
+| Extraction failure | A thrown call: 422, not retried, no internals in the response |
 
 Both scenario tests are written and committed failing before the implementation. The input boundary test lands with the implementation.
 
@@ -129,3 +134,12 @@ Both scenario tests are written and committed failing before the implementation.
 | IaC | AWS CDK: the API on Lambda behind a Function URL, the built frontend on S3 as a static site |
 
 Reasoning for each choice is in DECISIONS.md.
+
+## Amendments
+
+**Harden phase — invalid model output.**
+
+- Was: reject on the first failed validation.
+- Now: one repair attempt with the validation errors fed back, then reject.
+- Why: shipping the simpler version first meant the harden step was a real
+  change rather than a hypothetical one.

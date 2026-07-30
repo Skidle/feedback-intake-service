@@ -33,12 +33,26 @@ describe('Acceptance criteria', () => {
         expect(storedRecord.body.id).toBe(res.body.id);
     })
 
-    it('Scenario: Model output that fails the contract is rejected', async () => {
-        const app = createApp({ extraction: { extract: async () => ({ ...validExtraction, summary: 'x'.repeat(300) }) } });
+    it('Scenario: Model output that fails the contract is retried once, then rejected', async () => {
+        let calls = 0;
+        const failures: (string | undefined)[] = [];
+        const app = createApp({
+            extraction: {
+                extract: async (_text, previousFailure) => {
+                    calls += 1;
+                    failures.push(previousFailure);
+                    return { ...validExtraction, summary: 'x'.repeat(300) };
+                },
+            },
+        });
 
         const res = await request(app)
             .post('/feedback')
             .send({ text: 'The export button does nothing on Safari' });
+
+        expect(calls).toBe(2);
+        expect(failures[0]).toBeUndefined();
+        expect(failures[1]).toContain('summary');
 
         expect(res.status).toBe(422);
         expect(res.body.error).toBeDefined();

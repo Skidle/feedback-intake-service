@@ -9,9 +9,8 @@ const SubmissionSchema = z.object({
   text: z.string().trim().min(1).max(5000),
 });
 
-// Errors thrown by middleware carry the status they mean — body-parser sets 400
-// on a malformed body. Answering 500 would tell the caller to retry something
-// that will fail identically every time.
+// Preserve the status middleware set on the error: a malformed body is a 400,
+// and answering 500 would tell the caller to retry something that cannot work.
 function statusOf(error: unknown): number {
   return typeof error === 'object' &&
     error !== null &&
@@ -21,9 +20,36 @@ function statusOf(error: unknown): number {
     : 500;
 }
 
+type Attempt =
+  | { ok: true; fields: z.infer<typeof ExtractedFieldsSchema> }
+  | { ok: false; kind: 'threw' }
+  | { ok: false; kind: 'invalid'; failure: string; details: unknown };
+
 export function createApp(deps: { extraction: ExtractionClient }): Express {
   const app = express();
   const store = createStore();
+
+  async function attempt(
+    text: string,
+    previousFailure?: string,
+  ): Promise<Attempt> {
+    let answer: unknown;
+    try {
+      answer = await deps.extraction.extract(text, previousFailure);
+    } catch {
+      return { ok: false, kind: 'threw' };
+    }
+
+    const parsed = ExtractedFieldsSchema.safeParse(answer);
+    if (parsed.success) return { ok: true, fields: parsed.data };
+
+    return {
+      ok: false,
+      kind: 'invalid',
+      failure: z.prettifyError(parsed.error),
+      details: z.treeifyError(parsed.error),
+    };
+  }
 
   app.use(express.json());
 
@@ -39,30 +65,25 @@ export function createApp(deps: { extraction: ExtractionClient }): Express {
 
     const { text } = submission.data;
 
-    // A call that throws and an answer that fails the contract are the same
-    // outcome for the caller: no valid record, so neither is allowed to escape
-    // as a 500 carrying a stack trace.
-    let answer: unknown;
-    try {
-      answer = await deps.extraction.extract(text);
-    } catch {
-      res.status(422).json({ error: 'Extraction did not satisfy the contract' });
-      return;
+    // Exactly one repair attempt, and only for output that failed the contract —
+    // which includes the model returning no tool call at all. A throw is not
+    // retried: a correction cannot fix a provider that is down. Both failures
+    // answer 422.
+    let result = await attempt(text);
+    if (!result.ok && result.kind === 'invalid') {
+      result = await attempt(text, result.failure);
     }
 
-    // The model's answer is untrusted input: it is validated before any of it
-    // reaches the record, and a failure stores nothing.
-    const extracted = ExtractedFieldsSchema.safeParse(answer);
-    if (!extracted.success) {
+    if (!result.ok) {
       res.status(422).json({
         error: 'Extraction did not satisfy the contract',
-        details: z.treeifyError(extracted.error),
+        details: result.kind === 'invalid' ? result.details : undefined,
       });
       return;
     }
 
     const record: FeedbackRecord = {
-      ...extracted.data,
+      ...result.fields,
       id: `fb_${uuidv7()}`,
       submittedAt: new Date().toISOString(),
       status: 'new',
@@ -87,11 +108,8 @@ export function createApp(deps: { extraction: ExtractionClient }): Express {
     res.status(200).json(record);
   });
 
-  // Express treats a four-argument middleware as the error handler. Without one
-  // it answers with its own HTML page containing the stack trace and absolute
-  // file paths. This replies with the same shape as every other error and logs
-  // the detail server-side instead. Not conditioned on NODE_ENV: a response
-  // that leaks internals should not be one environment variable away.
+  // Not conditioned on NODE_ENV: a response that leaks internals should not be
+  // one environment variable away.
   app.use(
     (
       error: unknown,
