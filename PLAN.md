@@ -24,7 +24,7 @@ Feedback Intake Service. Receives freeform text and returns a validated structur
 | Status transitions | Records are created `new` and stay as such. `triaged` and `resolved` are in the contract but nothing sets them |
 | Client-side routing | One view, no router |
 | Rate limiting | No auth and no deployment, so there is nothing to attach it to |
-| Non-English submissions | Untested |
+| Localization | The service handles UTF-8, but nothing is translated or locale-aware |
 | Retrying failed API calls (429, timeouts, 5xx) | A failed call and a bad answer are different problems, and only the latter matters here |
 
 ## Contract
@@ -56,7 +56,7 @@ The only change to the suggested schema. Two reasons:
 
 | Endpoint | Success | Errors |
 |---|---|---|
-| `POST /feedback` | 201, the created record | 400, empty submission, or over 5000 characters<br>422, extraction did not satisfy the contract |
+| `POST /feedback` | 201, the created record | 400, submission empty, whitespace-only, or over 5000 characters<br>422, extraction did not satisfy the contract |
 | `GET /feedback` | 200, all records | — |
 | `GET /feedback/:id` | 200, the record | 404, unknown id |
 
@@ -109,7 +109,7 @@ No test calls the real API. The extraction client is replaced with a fake, so th
 | Extraction retry | The repair attempt succeeding, and no retry when the first answer is already valid |
 | Extraction failure | A thrown call: 422, not retried, no internals in the response |
 
-Both scenario tests are written and committed failing before the implementation. The input boundary test lands with the implementation.
+Both scenario tests are written and committed failing before the implementation.
 
 ## Risks
 
